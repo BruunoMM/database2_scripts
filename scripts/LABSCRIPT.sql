@@ -1,14 +1,18 @@
-DROP TABLE NotasVenda;
-DROP TABLE ItensNota;
-DROP TABLE Mercadorias;
-DROP TABLE Cliente;
-DROP TABLE Funcionario;
-DROP TABLE CargosFunc;
-DROP TABLE Departamento;
-DROP TABLE Cargo;
-DROP TABLE NotasCompra;
-DROP TABLE ItensNotaCompra;
-DROP TABLE Empresas;
+DROP TABLE NotasVenda CASCADE;
+DROP TABLE ItensNota CASCADE;
+DROP TABLE Mercadorias CASCADE;
+DROP TABLE Cliente CASCADE;
+DROP TABLE Funcionario CASCADE;
+DROP TABLE CargosFunc CASCADE;
+DROP TABLE Departamento CASCADE;
+DROP TABLE Cargo CASCADE;
+DROP TABLE NotasCompra CASCADE;
+DROP TABLE ItensNotaCompra CASCADE;
+DROP TABLE Empresas CASCADE;
+
+DROP FUNCTION manda_email();
+DROP FUNCTION atualiza_preco();
+
 
 --CRIAR TABELA MERCADORIAS
 
@@ -184,6 +188,7 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+
 CREATE TRIGGER atualiza_preco AFTER INSERT
 ON itensNotaCompra
 FOR EACH ROW
@@ -207,7 +212,51 @@ RETURN new;
 END;
 $body$ language plpgsql;
 
+
+
 CREATE TRIGGER verifica_preco BEFORE INSERT
-ON ItensNota   
-FOR EACH ROW
+ON ItensNota  FOR EACH ROW
 EXECUTE PROCEDURE verificaPreco();
+
+
+--VERIFICA ESTOQUE
+
+CREATE FUNCTION verificaEstoque()
+RETURNS TRIGGER AS $body$
+DECLARE qtdEstoque integer;
+BEGIN
+	SELECT 	QuantidadeEstoque
+	INTO	qtdEstoque
+	FROM	mercadorias;
+	
+	IF qtdEstoque < qtd THEN
+		RAISE EXCEPTION 'Não há estoque suficiente';
+	END IF;
+RETURN new;
+END;
+$body$ language plpgsql;
+
+CREATE TRIGGER verifica_estoque BEFORE INSERT or UPDATE
+ON itensNota FOR EACH ROW
+EXECUTE PROCEDURE verificaEstoque();
+
+--VERIFICA ESTOQUE MAXIMO
+
+CREATE FUNCTION verificaEstoqueMax()
+returns TRIGGER AS $body$
+DECLARE qtdEstoque, max integer
+Begin
+	SELECT 	QuantidadeEstoque, QuantidadeEstoqueMax
+	INTO		qtdEstoque, max 
+	FROM	mercadorias
+	
+	if qtdEstoque + NEW.Quantidade > max THEN
+		RAISE EXCEPTION ‘'Ultrapassa estoque maximo';
+	end if;
+Return new;
+end;
+$body$ language plpgsql;
+
+CREATE TRIGGER verifica_estoque_max BEFORE INSERT or UPDATE
+ON itensNotaCompra FOR EACH ROW
+EXECUTE PROCEDURE verificaEstoqueMax();
