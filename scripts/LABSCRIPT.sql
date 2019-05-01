@@ -211,3 +211,24 @@ CREATE TRIGGER verifica_preco BEFORE INSERT
 ON ItensNota   
 FOR EACH ROW
 EXECUTE PROCEDURE verificaPreco();
+
+--VERIFICA ESTOQUE
+
+CREATE FUNCTION verificaEstoque()
+RETURNS TRIGGER AS $body$
+DECLARE qtdEstoque integer;
+BEGIN
+	SELECT 	QuantidadeEstoque
+	INTO	qtdEstoque
+	FROM	mercadorias;
+	
+	IF qtdEstoque < qtd THEN
+		RAISE EXCEPTION 'Não há estoque suficiente';
+	END IF;
+RETURN new;
+END;
+$body$ language plpgsql;
+
+CREATE TRIGGER verifica_estoque BEFORE INSERT or UPDATE
+ON itensNota FOR EACH ROW
+EXECUTE PROCEDURE verificaEstoque();
