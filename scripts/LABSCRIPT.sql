@@ -1,14 +1,18 @@
-DROP TABLE NotasVenda;
-DROP TABLE ItensNota;
-DROP TABLE Mercadorias;
-DROP TABLE Cliente;
-DROP TABLE Funcionario;
-DROP TABLE CargosFunc;
-DROP TABLE Departamento;
-DROP TABLE Cargo;
-DROP TABLE NotasCompra;
-DROP TABLE ItensNotaCompra;
-DROP TABLE Empresas;
+DROP TABLE NotasVenda CASCADE;
+DROP TABLE ItensNota CASCADE;
+DROP TABLE Mercadorias CASCADE;
+DROP TABLE Cliente CASCADE;
+DROP TABLE Funcionario CASCADE;
+DROP TABLE CargosFunc CASCADE;
+DROP TABLE Departamento CASCADE;
+DROP TABLE Cargo CASCADE;
+DROP TABLE NotasCompra CASCADE;
+DROP TABLE ItensNotaCompra CASCADE;
+DROP TABLE Empresas CASCADE;
+
+DROP FUNCTION manda_email();
+DROP FUNCTION atualiza_preco();
+
 
 --CRIAR TABELA MERCADORIAS
 
