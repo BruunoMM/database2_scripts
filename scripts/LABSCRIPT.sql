@@ -177,12 +177,12 @@ EXECUTE PROCEDURE manda_email();
 
 --ATUALIZA PREÇO 
 
-CREATE FUNCTION atualiza_preco()
+CREATE OR REPLACE FUNCTION atualiza_preco()
 RETURNS TRIGGER
 AS $$
 BEGIN
 	UPDATE	mercadorias
-	SET		PrecoMin = NEW.PrecoMin
+	SET		PrecoMin = NEW.ValorUnitario
 	WHERE 	numeroMercadoria = NEW.numeroMercadoria;
 RETURN NEW;
 END;
@@ -226,7 +226,7 @@ BEGIN
 	INTO	qtdEstoque
 	FROM	mercadorias;
 	
-	IF qtdEstoque < qtd THEN
+	IF qtdEstoque < NEW.Quantidade THEN
 		RAISE EXCEPTION 'Não há estoque suficiente';
 	END IF;
 RETURN new;
@@ -239,12 +239,12 @@ EXECUTE PROCEDURE verificaEstoque();
 
 --VERIFICA ESTOQUE MAXIMO
 
-CREATE FUNCTION verificaEstoqueMax()
+CREATE OR REPLACE FUNCTION verificaEstoqueMax()
 RETURNS TRIGGER AS $body$
 DECLARE qtdEstoque int;
 DECLARE qtdMax int;
 BEGIN
-	SELECT 	QuantidadeEstoque, QuantidadeEstoqueMax
+	SELECT 	EstoqueMin, EstoqueMax
 	INTO		qtdEstoque, qtdMax 
 	FROM	mercadorias;
 	
