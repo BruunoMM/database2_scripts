@@ -12,7 +12,8 @@ DROP TABLE Empresas CASCADE;
 
 DROP FUNCTION manda_email();
 DROP FUNCTION atualiza_preco();
-
+DROP FUNCTION verificapreco();
+DROP FUNCTION verificaestoque();
 
 --CRIAR TABELA MERCADORIAS
 
@@ -45,7 +46,8 @@ CREATE TABLE Mercadorias (
 	FormaPagamento varchar(50),
 	CodigoCliente integer,
 	CPFVendedor varchar(15),
-            FOREIGN KEY (CodigoCliente) REFERENCES Cliente(Codigo)
+	
+    FOREIGN KEY (CodigoCliente) REFERENCES Cliente(Codigo)
 	);
 
 --CRIAR TABELA ITENSNOTA
@@ -98,7 +100,7 @@ CREATE TABLE CargosFunc(
 CPF varchar(15),
 CodigoCargo integer,
 DataInicio Date,
-DataaFim Date,
+DataFim Date,
 
 Primary key(CPF, CodigoCargo),
 FOREIGN KEY (CPF) REFERENCES Funcionario(CPF),
@@ -109,7 +111,7 @@ FOREIGN KEY (CodigoCargo) REFERENCES Cargo(Codigo)
 
 CREATE TABLE Empresas(
 id integer Primary key,
-Nome integer,
+Nome varchar(100),
 Endereco varchar(100)
 );
 
@@ -149,8 +151,8 @@ ALTER TABLE Mercadorias
 --ALTERA TABELA NOTASVENDA
 
 ALTER TABLE NotasVenda
-  ADD CPF varchar(15);
- -- FOREIGN KEY (CPF) REFERENCES ;
+  ADD CPFFuncionario varchar(15),
+  ADD FOREIGN KEY (CPFFuncionario) REFERENCES Funcionario(CPF);
   
 
 --MANDA EMAIL
@@ -165,6 +167,7 @@ Begin
 	
 	if qtd < min THEN
 		--sendEmail();
+		raise notice 'email enviado';
 	end if;
 Return new;
 end;
@@ -175,7 +178,7 @@ CREATE TRIGGER pedido_estoque after INSERT or UPDATE
 ON mercadorias FOR each row
 EXECUTE PROCEDURE manda_email();
 
---ATUALIZA PREÇO 
+--ATUALIZA PREÇO MIN
 
 CREATE OR REPLACE FUNCTION atualiza_preco()
 RETURNS TRIGGER
@@ -193,7 +196,7 @@ ON itensNotaCompra
 FOR EACH ROW
 EXECUTE PROCEDURE atualiza_preco();
 
---VERIFICA PREÇO
+--VERIFICA PREÇO MIN
 
 CREATE FUNCTION verificaPreco()
 RETURNS TRIGGER AS $body$
@@ -205,7 +208,7 @@ BEGIN
 	WHERE	NumeroMercadoria = NEW.numeroMercadoria;
 
 	If NEW.valorUnitario < valorMin THEN
-        RAISE EXCEPTION 'Valor Invalido';
+        RAISE EXCEPTION 'Preco invalido';
 	END IF;
 RETURN new;
 END;
@@ -224,7 +227,8 @@ DECLARE qtdEstoque integer;
 BEGIN
 	SELECT 	QuantidadeEstoque
 	INTO	qtdEstoque
-	FROM	mercadorias;
+	FROM	mercadorias
+	WHERE   numeroMercadoria = NEW.numeroMercadoria;
 	
 	IF qtdEstoque < NEW.Quantidade THEN
 		RAISE EXCEPTION 'Não há estoque suficiente';
@@ -258,3 +262,67 @@ $body$ language plpgsql;
 CREATE TRIGGER verifica_estoque_max BEFORE INSERT or UPDATE
 ON itensNotaCompra FOR EACH ROW
 EXECUTE PROCEDURE verificaEstoqueMax();
+
+
+
+
+
+--------------------------INSERÇÕES----------------------------------
+
+--MERCADORIAS
+INSERT INTO mercadorias (numeromercadoria, descricao, quantidadeestoque, estoquemin, estoquemax, precomin)
+VALUES (1, 'Queijo', 10, 5, 20, 3);
+
+--CLIENTE
+INSERT INTO cliente (codigo, nome, telefone, logradouro, numero, complemento, cidade, estado, numerocontribuinte)
+VALUES (1, 'Renan', 12345, 'Rua XX', 20, null , 'Rio', 'RJ', 123);
+
+--NOTASVENDA
+INSERT INTO notasvenda (numero, dataemissao, formapagamento, codigocliente, cpfvendedor, cpffuncionario)
+VALUES (1, null, 'Cartao', 1, null, null);
+
+--ITENSNOTA
+INSERT INTO itensnota (numero, numeromercadoria, quantidade, valorunitario)
+VALUES (1, 1, 5, 12);
+
+--DEPARTAMENTO
+INSERT INTO departamento (codigodepartamento, nome, cpf_chefe)
+VALUES (1, 'TI', '12312');
+
+--FUNCIONARIO
+INSERT INTO funcionario (cpf, nome, telefone, logradouro, numero, complemento, cidade, estado, codigodepartamento)
+VALUES ('12345', 'Joao', 12345, null, null, null, null, null, null);
+
+-- CARGO
+
+INSERT INTO cargo (codigo, descricao, salario_base)
+VALUES (1, 'RH', 5000);
+ 
+ INSERT INTO cargo (codigo, descricao, salario_base)
+VALUES (2, 'Vendas', 10000);
+ 
+ INSERT INTO cargo (codigo, descricao, salario_base)
+VALUES (3, 'Marketing', 8000);
+ 
+ INSERT INTO cargo (codigo, descricao, salario_base)
+VALUES (4, 'Programador', 500000);
+
+ INSERT INTO cargo (codigo, descricao, salario_base)
+VALUES (5, 'DBA', 500000);
+  
+ --CARGOSFUNC
+ INSERT INTO cargosfunc (cpf, codigocargo, datainicio, datafim)
+VALUES ('12345', 1, null, null);
+
+ --EMPRESAS
+  INSERT INTO empresas (id, nome, endereco)
+VALUES (1, 'Emp XX', null);
+
+ --NOTASCOMPRA
+  INSERT INTO notascompra (numero, dataemissao, fornecedorid)
+VALUES (1, null, 1);
+
+ --ITENSNOTACOMPRA
+ INSERT INTO itensnotacompra (numero, numeroMercadoria, quantidade, valorunitario)
+ VALUES (1, 1, 5, 12);
+
